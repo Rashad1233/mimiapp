@@ -1,43 +1,80 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Suppliers{% endblock %}
+{% block title %}Suppliers{% endblock %}
 
 {% block content %}
 <h2>Manage Suppliers</h2>
 
-<h3>Existing Suppliers</h3>
+<!-- Suppliers Table -->
 <table>
     <thead>
         <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Products Offered</th>
+            <th>Product</th>
+            <th>Supplier Name</th>
+            <th>Quantity</th>
+            <th>Price</th>
             <th>Delivery Time (days)</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
         {% for supplier in suppliers %}
         <tr>
-            <td>{{ supplier.id }}</td>
+            <td>{{ supplier.product.name }}</td>
             <td>{{ supplier.name }}</td>
-            <td>{{ supplier.products_offered }}</td>
+            <td>{{ supplier.quantity }}</td>
+            <td>${{ "%.2f"|format(supplier.price) }}</td>
             <td>{{ supplier.delivery_time }}</td>
+            <td>
+                <!-- Delete Supplier Form -->
+                <form method="POST" action="{{ url_for('delete_supplier', supplier_id=supplier.id) }}">
+                    <!-- CSRF Token (if using Flask-WTF or similar) -->
+                    {{ form.csrf_token }}
+
+                    <button type="submit" class="button delete-button" onclick="return confirm('Are you sure you want to delete this supplier?');">Delete</button>
+                </form>
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
-<h3>Add New Supplier</h3>
-<form method="POST">
-    <label for="name">Name</label>
+<!-- Add Supplier Form -->
+<h3>Add Supplier</h3>
+{% if products|length > 0 %}
+<form method="POST" action="{{ url_for('suppliers') }}">
+    <!-- CSRF Token (if using Flask-WTF or similar) -->
+    {{ form.csrf_token }}
+
+    <!-- Product Selection -->
+    <label for="product_id">Product:</label>
+    <select id="product_id" name="product_id" required>
+        <option value="" disabled selected>Select a product</option>
+        {% for product in products %}
+        <option value="{{ product.id }}">{{ product.name }}</option>
+        {% endfor %}
+    </select>
+
+    <!-- Supplier Name Input -->
+    <label for="name">Supplier Name:</label>
     <input type="text" id="name" name="name" required>
 
-    <label for="products_offered">Products Offered</label>
-    <input type="text" id="products_offered" name="products_offered" required>
+    <!-- Quantity Input -->
+    <label for="quantity">Quantity:</label>
+    <input type="number" id="quantity" name="quantity" min="1" required>
 
-    <label for="delivery_time">Delivery Time (days)</label>
-    <input type="number" id="delivery_time" name="delivery_time" required>
+    <!-- Price Input -->
+    <label for="price">Price ($):</label>
+    <input type="number" id="price" name="price" step="0.01" min="0.01" required>
 
+    <!-- Delivery Time Input -->
+    <label for="delivery_time">Delivery Time (days):</label>
+    <input type="number" id="delivery_time" name="delivery_time" min="1" required>
+
+    <!-- Submit Button -->
     <button type="submit" class="button">Add Supplier</button>
 </form>
+{% else %}
+<p>No products available. Please add products before adding suppliers.</p>
+{% endif %}
 {% endblock %}

@@ -1,17 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Manage Users{% endblock %}
+{% block title %}Confirm Users{% endblock %}
 
 {% block content %}
-<h2>Manage Users</h2>
+<h2>Confirm Users</h2>
 
-<h3>Inactive Users (Pending Approval)</h3>
+<!-- Таблица для подтверждения пользователей -->
 <table>
     <thead>
         <tr>
-            <th>ID</th>
+            <th>User ID</th>
             <th>Username</th>
             <th>Email</th>
+            <th>Status</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -21,8 +22,9 @@
             <td>{{ user.id }}</td>
             <td>{{ user.username }}</td>
             <td>{{ user.email }}</td>
+            <td>Inactive</td>
             <td>
-                <form method="POST">
+                <form method="POST" action="{{ url_for('confirm_users') }}">
                     <input type="hidden" name="user_id" value="{{ user.id }}">
                     <button type="submit" name="action" value="approve" class="button">Approve</button>
                     <button type="submit" name="action" value="delete" class="button delete-button">Delete</button>
@@ -33,30 +35,8 @@
     </tbody>
 </table>
 
-<h3>Active Users</h3>
-<table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in active_users %}
-        <tr>
-            <td>{{ user.id }}</td>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email }}</td>
-            <td>
-                <form method="POST">
-                    <input type="hidden" name="user_id" value="{{ user.id }}">
-                    <button type="submit" name="action" value="delete" class="button delete-button">Delete</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<!-- Уведомление, если нет пользователей для подтверждения -->
+{% if inactive_users|length == 0 %}
+<p>No users waiting for approval at the moment.</p>
+{% endif %}
 {% endblock %}

@@ -3,49 +3,62 @@
 {% block title %}User Dashboard{% endblock %}
 
 {% block content %}
-    <h2>Welcome, {{ user.username }}</h2>
+<h2>User Dashboard</h2>
 
-    <h3>Available Products</h3>
-    <table>
-        <thead>
-            <tr>
-                <th>Product ID</th>
-                <th>Product Name</th>
-                <th>Price</th>
-                <th>Stock</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for product in products %}
-                <tr>
-                    <td>{{ product.id }}</td>
-                    <td>{{ product.name }}</td>
-                    <td>${{ product.price }}</td>
-                    <td>{{ product.stock }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<!-- Sales History Section -->
+<h3>Sales History</h3>
+{% if sales|length > 0 %}
+<table>
+    <thead>
+        <tr>
+            <th>Product Name</th>
+            <th>Quantity Sold</th>
+            <th>Total Revenue</th>
+            <th>Sale Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sale in sales %}
+        <tr>
+            <td>{{ sale.product.name }}</td>
+            <td>{{ sale.quantity }}</td>
+            <!-- Formatting total_price to two decimal places -->
+            <td>${{ "%.2f"|format(sale.total_price) }}</td>
+            <td>{{ sale.sale_date.strftime('%Y-%m-%d') }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No sales recorded yet.</p>
+{% endif %}
 
-    <h3>Choose a Supplier</h3>
-    <form method="POST" action="{{ url_for('shopping_cart') }}">
-        <label for="product_id">Select Product:</label>
-        <select name="product_id" id="product_id" required>
-            {% for product in products %}
-                <option value="{{ product.id }}">{{ product.name }}</option>
-            {% endfor %}
-        </select>
+<!-- Add Sale Section -->
+<h3>Add Sale</h3>
+{% if products|length > 0 %}
+<form method="POST" action="{{ url_for('add_sale') }}">
+    <!-- CSRF Token (if using Flask-WTF or similar) -->
+    {{ form.csrf_token }}
 
-        <label for="supplier_id">Select Supplier:</label>
-        <select name="supplier_id" id="supplier_id" required>
-            {% for supplier in suppliers %}
-                <option value="{{ supplier.id }}">{{ supplier.name }}</option>
-            {% endfor %}
-        </select>
+    <!-- Product Selection -->
+    <label for="product_id">Product:</label>
+    <select id="product_id" name="product_id" required>
+        <!-- Placeholder option to guide users -->
+        <option value="" disabled selected>Select a product</option>
+        {% for product in products %}
+        <option value="{{ product.id }}">{{ product.name }}</option>
+        {% endfor %}
+    </select>
 
-        <label for="quantity">Quantity:</label>
-        <input type="number" name="quantity" id="quantity" min="1" required>
+    <!-- Quantity Input -->
+    <label for="quantity">Quantity Sold:</label>
+    <!-- Added id and min attribute for validation -->
+    <input type="number" id="quantity" name="quantity" min="1" required>
 
-        <button type="submit" class="button">Add to Cart</button>
-    </form>
+    <!-- Submit Button -->
+    <button type="submit" class="button">Add Sale</button>
+</form>
+{% else %}
+<p>No products available. Please add products to make a sale.</p>
+{% endif %}
 {% endblock %}

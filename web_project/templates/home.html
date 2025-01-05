@@ -1,15 +1,23 @@
-{% extends "base.html" %}
+{% extends "layout.html" %}
 
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    <h1>Welcome to the ERP System</h1>
-    <p>Efficiently manage your inventory, suppliers, and sales.</p>
-    {% if not 'user_id' in session %}
-        <div class="button-group">
-            <a href="{{ url_for('login', role='manager') }}" class="button">Manager Login</a>
-            <a href="{{ url_for('login', role='user') }}" class="button">User Login</a>
-            <a href="{{ url_for('register') }}" class="button">Register User</a>
-        </div>
-    {% endif %}
+<h1>Welcome to the ERP System</h1>
+<p>Our system helps you manage inventory, orders, suppliers, and analytics in one place.</p>
+
+<div class="features">
+    <div class="feature-card">
+        <h3>Efficient Management</h3>
+        <p>Streamline your operations and manage everything with ease.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Detailed Analytics</h3>
+        <p>Track sales, monitor inventory, and make data-driven decisions.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Supplier Integration</h3>
+        <p>Seamlessly manage suppliers and automate orders for low-stock products.</p>
+    </div>
+</div>
 {% endblock %}

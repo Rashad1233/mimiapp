@@ -3,31 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>{% block title %}ERP System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <header>
-        <h1>ERP System</h1>
-        <nav>
-            <a href="/">Home</a>
-            {% if session.get('role') == 'manager' %}
-                <a href="/manager">Manager Dashboard</a>
-                <a href="/manager/inventory">Manage Inventory</a>
-                <a href="/shopping_cart">Shopping Cart</a>
-            {% elif session.get('role') == 'user' %}
-                <a href="/user">User Dashboard</a>
-            {% endif %}
-            {% if session.get('user_id') %}
-                <a href="/logout">Logout</a>
+        <nav class="navbar">
+            <a href="{{ url_for('home') }}">Home</a>
+            {% if logged_in %}
+                {% if role == 'manager' %}
+                    <a href="{{ url_for('manager_dashboard') }}">Manager Dashboard</a>
+                {% elif role == 'user' %}
+                    <a href="{{ url_for('user_dashboard') }}">User Dashboard</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login', role='manager') }}">Manager Login</a>
+                <a href="{{ url_for('login', role='user') }}">User Login</a>
+                <a href="{{ url_for('register') }}">Register</a>
             {% endif %}
         </nav>
     </header>
-    <main>
+
+    <main class="container">
         {% block content %}{% endblock %}
     </main>
-    <footer>
-        <p>&copy; 2025 ERP System. All rights reserved.</p>
+
+    <footer class="footer">
+        &copy; 2025 ERP System. All rights reserved.
     </footer>
 </body>
 </html>

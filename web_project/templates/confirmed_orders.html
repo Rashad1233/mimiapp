@@ -4,26 +4,37 @@
 
 {% block content %}
 <h2>Confirmed Orders</h2>
+
+<!-- Таблица подтверждённых заказов -->
 <table>
     <thead>
         <tr>
             <th>Order ID</th>
             <th>Product</th>
             <th>Quantity</th>
+            <th>Total Price</th>
             <th>Supplier</th>
             <th>Status</th>
+            <th>Confirmed By</th>
         </tr>
     </thead>
     <tbody>
-        {% for order in orders %}
+        {% for order in confirmed_orders %}
         <tr>
             <td>{{ order.id }}</td>
-            <td>{{ order.product_id }}</td>
+            <td>{{ order.product.name }}</td>
             <td>{{ order.quantity }}</td>
-            <td>{{ order.supplier_id }}</td>
+            <td>${{ order.quantity * order.product.price }}</td>
+            <td>{{ order.supplier.name }}</td>
             <td>{{ order.status }}</td>
+            <td>{{ order.manager.username }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
+<!-- Уведомление, если подтверждённых заказов нет -->
+{% if confirmed_orders|length == 0 %}
+<p>No confirmed orders at the moment.</p>
+{% endif %}
 {% endblock %}

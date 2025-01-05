@@ -5,33 +5,84 @@
 {% block content %}
 <h2>Manager Dashboard</h2>
 
-<h3>Sales Statistics</h3>
+<!-- Аналитика по продажам -->
+<h3>Sales Analytics</h3>
 <table>
     <thead>
         <tr>
-            <th>Product Name</th>
-            <th>Quantity Sold</th>
+            <th>Username</th>
+            <th>Total Sales</th>
             <th>Total Revenue</th>
-            <th>User</th>
-            <th>Supplier</th>
-            <th>Date</th>
         </tr>
     </thead>
     <tbody>
-        {% for sale in sales %}
+        {% for user, sales, revenue in sales_analytics %}
         <tr>
-            <td>{{ sale.product.name }}</td>
-            <td>{{ sale.quantity }}</td>
-            <td>${{ sale.total_price }}</td>
-            <td>User {{ sale.user_id }}</td>
-            <td>Supplier {{ sale.supplier_id }}</td>
-            <td>{{ sale.sale_date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ user }}</td>
+            <td>{{ sales }}</td>
+            <td>${{ revenue }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
-<h3>Summary</h3>
-<p><strong>Total Revenue:</strong> ${{ total_revenue }}</p>
-<p><strong>Total Products Sold:</strong> {{ total_products_sold }}</p>
+<!-- Товары с низким запасом -->
+<h3>Low Stock Products</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Product Name</th>
+            <th>Stock</th>
+            <th>Owner</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in low_stock_products %}
+        <tr>
+            <td>{{ product.name }}</td>
+            <td>{{ product.stock }}</td>
+            <td>{{ product.owner.username }}</td>
+            <td>
+                <form method="POST" action="{{ url_for('replenish_stock') }}">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <button type="submit" class="button">Replenish</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- Утверждение новых пользователей -->
+<h3>Manage Users</h3>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in inactive_users %}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>Inactive</td>
+            <td>
+                <form method="POST" action="{{ url_for('manage_users') }}">
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    <button type="submit" name="action" value="approve" class="button">Approve</button>
+                    <button type="submit" name="action" value="delete" class="button delete-button">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 {% endblock %}

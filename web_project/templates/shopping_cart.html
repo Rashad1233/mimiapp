@@ -1,27 +1,34 @@
-{% extends "base.html" %}
-
-{% block title %}Shopping Cart{% endblock %}
-
-{% block content %}
-<h2>Shopping Cart</h2>
-<form method="POST">
-    <label for="product">Product</label>
-    <select name="product_id" id="product" required>
+<form method="POST" action="{{ url_for('shopping_cart') }}">
+    <!-- Product Selection -->
+    <label for="product_id">Product:</label>
+    <select id="product_id" name="product_id" required>
         {% for product in products %}
-        <option value="{{ product.id }}">{{ product.name }} - ${{ product.price }}</option>
+            <option value="{{ product.id }}">{{ product.name }}</option>
         {% endfor %}
     </select>
 
-    <label for="quantity">Quantity</label>
-    <input type="number" name="quantity" id="quantity" required>
+    <!-- Quantity Input -->
+    <label for="quantity">Quantity:</label>
+    <input type="number" id="quantity" name="quantity" required>
 
-    <label for="supplier">Supplier</label>
-    <select name="supplier_id" id="supplier" required>
-        {% for supplier in suppliers %}
-        <option value="{{ supplier.id }}">{{ supplier.name }} - {{ supplier.delivery_time }} days</option>
-        {% endfor %}
-    </select>
+    <!-- Supplier Selection -->
+    <h4>Choose Supplier</h4>
+    <div>
+        <label for="manual">Manual Selection:</label>
+        <select id="manual" name="supplier_id">
+            {% for supplier in suppliers %}
+                <option value="{{ supplier.id }}">
+                    {{ supplier.name }} - ${{ supplier.price }} ({{ supplier.delivery_time }} days)
+                </option>
+            {% endfor %}
+        </select>
+    </div>
 
+    <div>
+        <label for="auto">Automatic Selection:</label>
+        <input type="checkbox" id="auto" name="auto">
+    </div>
+
+    <!-- Submit Button -->
     <button type="submit" class="button">Add to Cart</button>
 </form>
-{% endblock %}

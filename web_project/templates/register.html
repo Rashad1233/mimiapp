@@ -3,23 +3,28 @@
 {% block title %}Register{% endblock %}
 
 {% block content %}
-    <h2>Register as a New User</h2>
-    <form method="POST">
-        <label for="username">Username:</label>
-        <input type="text" name="username" id="username" required>
+<h2>Register</h2>
 
-        <label for="email">Email:</label>
-        <input type="email" name="email" id="email" required>
+<!-- Форма регистрации -->
+<form method="POST" action="{{ url_for('register') }}">
+    <label for="username">Username:</label>
+    <input type="text" name="username" id="username" required>
 
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password" required>
+    <label for="email">Email:</label>
+    <input type="email" name="email" id="email" required>
 
-        <label for="role">Role:</label>
-        <select name="role" id="role" required>
-            <option value="manager">Manager</option>
-            <option value="user">User</option>
-        </select>
+    <label for="password">Password:</label>
+    <input type="password" name="password" id="password" required>
 
-        <button type="submit" class="button">Register</button>
-    </form>
+    <button type="submit" class="button">Register</button>
+</form>
+
+<!-- Уведомление -->
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<p>
+    Already have an account? <a href="{{ url_for('login', role='user') }}">Log in</a>
+</p>
 {% endblock %}
