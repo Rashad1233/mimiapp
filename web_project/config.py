@@ -2,6 +2,6 @@
 import os
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your_secure_secret_key'  # Replace with a strong secret key
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///database.db'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your_secure_secret_key'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///database.db'  # SQLite Database
     SQLALCHEMY_TRACK_MODIFICATIONS = False
