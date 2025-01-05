@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="form-container">
+    <h1>Welcome to the ERP System</h1>
+    <form method="POST" action="/select_role">
+        <button name="role" value="admin">Admin</button>
+        <button name="role" value="customer">Customer</button>
+        <button name="role" value="supplier">Supplier</button>
+    </form>
+</div>
+{% endblock %}

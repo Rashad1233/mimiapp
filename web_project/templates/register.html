@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="form-container">
+    <h1>Create Your Account</h1>
+    <form method="POST">
+        <label>Username:</label>
+        <input type="text" name="username" required>
+        <label>Email:</label>
+        <input type="email" name="email" required>
+        <label>Password:</label>
+        <input type="password" name="password" required>
+        <label>Role:</label>
+        <select name="role" required>
+            <option value="customer">Customer</option>
+            <option value="supplier">Supplier</option>
+        </select>
+        <button type="submit">Register</button>
+    </form>
+    <p>Already have an account? <a href="/">Login here</a></p>
+</div>
+{% endblock %}

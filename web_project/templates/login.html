@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="form-container">
+    <h1>Login for {{ role.capitalize() }}</h1>
+    <form method="POST">
+        <label>Email:</label>
+        <input type="email" name="email" required>
+        <label>Password:</label>
+        <input type="password" name="password" required>
+        <button type="submit">Login</button>
+    </form>
+    {% if role != 'admin' %}
+        <p>Don't have an account? <a href="/register">Register here</a></p>
+    {% endif %}
+</div>
+{% endblock %}
