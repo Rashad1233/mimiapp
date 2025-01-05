@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Suppliers{% endblock %}
+
+{% block content %}
+<h2>Manage Suppliers</h2>
+
+<h3>Existing Suppliers</h3>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Products Offered</th>
+            <th>Delivery Time (days)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for supplier in suppliers %}
+        <tr>
+            <td>{{ supplier.id }}</td>
+            <td>{{ supplier.name }}</td>
+            <td>{{ supplier.products_offered }}</td>
+            <td>{{ supplier.delivery_time }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Add New Supplier</h3>
+<form method="POST">
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" required>
+
+    <label for="products_offered">Products Offered</label>
+    <input type="text" id="products_offered" name="products_offered" required>
+
+    <label for="delivery_time">Delivery Time (days)</label>
+    <input type="number" id="delivery_time" name="delivery_time" required>
+
+    <button type="submit" class="button">Add Supplier</button>
+</form>
+{% endblock %}

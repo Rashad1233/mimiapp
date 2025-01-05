@@ -1,13 +1,19 @@
-{% extends "layout.html" %}
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
 {% block content %}
-<div class="form-container">
-    <h1>Login for {{ role.capitalize() }}</h1>
+    <h2>{{ role.capitalize() }} Login</h2>
     <form method="POST">
-        <label>Email:</label>
-        <input type="email" name="email" required>
-        <label>Password:</label>
-        <input type="password" name="password" required>
-        <button type="submit">Login</button>
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" required>
+
+        <label for="password">Password:</label>
+        <input type="password" name="password" id="password" required>
+
+        <button type="submit" class="button">Login</button>
     </form>
-</div>
+    {% if error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
 {% endblock %}

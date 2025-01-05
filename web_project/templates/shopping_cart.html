@@ -1,23 +1,27 @@
-{% extends "layout.html" %}
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart{% endblock %}
+
 {% block content %}
-<h1>Shopping Cart</h1>
-<table>
-    <thead>
-        <tr>
-            <th>Product</th>
-            <th>Quantity</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for cart_item, product in cart_items %}
-        <tr>
-            <td>{{ product.product_name }}</td>
-            <td>{{ cart_item.quantity }}</td>
-        </tr>
+<h2>Shopping Cart</h2>
+<form method="POST">
+    <label for="product">Product</label>
+    <select name="product_id" id="product" required>
+        {% for product in products %}
+        <option value="{{ product.id }}">{{ product.name }} - ${{ product.price }}</option>
         {% endfor %}
-    </tbody>
-</table>
-<form method="POST" action="/shopping_cart/checkout">
-    <button type="submit">Checkout</button>
+    </select>
+
+    <label for="quantity">Quantity</label>
+    <input type="number" name="quantity" id="quantity" required>
+
+    <label for="supplier">Supplier</label>
+    <select name="supplier_id" id="supplier" required>
+        {% for supplier in suppliers %}
+        <option value="{{ supplier.id }}">{{ supplier.name }} - {{ supplier.delivery_time }} days</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" class="button">Add to Cart</button>
 </form>
 {% endblock %}

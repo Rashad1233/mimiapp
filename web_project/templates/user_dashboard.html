@@ -1,5 +1,51 @@
-{% extends "layout.html" %}
+{% extends "base.html" %}
+
+{% block title %}User Dashboard{% endblock %}
+
 {% block content %}
-<h1>User Dashboard</h1>
-<p>Welcome to your dashboard!</p>
+    <h2>Welcome, {{ user.username }}</h2>
+
+    <h3>Available Products</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Product ID</th>
+                <th>Product Name</th>
+                <th>Price</th>
+                <th>Stock</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+                <tr>
+                    <td>{{ product.id }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>${{ product.price }}</td>
+                    <td>{{ product.stock }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Choose a Supplier</h3>
+    <form method="POST" action="{{ url_for('shopping_cart') }}">
+        <label for="product_id">Select Product:</label>
+        <select name="product_id" id="product_id" required>
+            {% for product in products %}
+                <option value="{{ product.id }}">{{ product.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="supplier_id">Select Supplier:</label>
+        <select name="supplier_id" id="supplier_id" required>
+            {% for supplier in suppliers %}
+                <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="quantity">Quantity:</label>
+        <input type="number" name="quantity" id="quantity" min="1" required>
+
+        <button type="submit" class="button">Add to Cart</button>
+    </form>
 {% endblock %}

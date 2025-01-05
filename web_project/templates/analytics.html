@@ -1,10 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-</body>
-</html>
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+    <h1>Analytics Dashboard</h1>
+    <p>Total Revenue: ${{ total_revenue }}</p>
+    <p>Total Products Sold: {{ total_products_sold }}</p>
+    <p>Average Order Value: ${{ average_order_value }}</p>
+    <p>Low Stock Products: {{ low_stock_products }}</p>
+
+    <h2>Top Selling Products</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th>Units Sold</th>
+                <th>Total Revenue</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in top_selling_products %}
+            <tr>
+                <td>{{ product.name }}</td>
+                <td>{{ product.units_sold }}</td>
+                <td>${{ product.revenue }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

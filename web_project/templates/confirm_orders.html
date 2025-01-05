@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Order Confirmation{% endblock %}
+
+{% block content %}
+    <h2>Order Confirmation</h2>
+
+    <h3>Pending Orders</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Product</th>
+                <th>User</th>
+                <th>Quantity</th>
+                <th>Supplier</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+                <tr>
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.product_id }}</td>
+                    <td>{{ order.user_id }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td>{{ order.supplier_id }}</td>
+                    <td>{{ order.status }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('confirm_orders') }}">
+                            <input type="hidden" name="order_id" value="{{ order.id }}">
+                            <button type="submit" name="action" value="approve" class="button">Approve</button>
+                            <button type="submit" name="action" value="reject" class="button delete-button">Reject</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

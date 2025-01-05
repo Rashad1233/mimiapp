@@ -1,32 +1,49 @@
-{% extends "layout.html" %}
+{% extends "base.html" %}
+
+{% block title %}Inventory Management{% endblock %}
+
 {% block content %}
-<h1>Inventory Management</h1>
-<table>
-    <thead>
-        <tr>
-            <th>Product</th>
-            <th>Quantity</th>
-            <th>Minimum Stock</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for item in inventory_items %}
-        <tr>
-            <td>{{ item.product_name }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>{{ item.min_stock }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<h2>Add New Product</h2>
-<form method="POST">
-    <label>Product Name:</label>
-    <input type="text" name="product_name" required>
-    <label>Quantity:</label>
-    <input type="number" name="quantity" required>
-    <label>Minimum Stock:</label>
-    <input type="number" name="min_stock" required>
-    <button type="submit">Add Product</button>
-</form>
+    <h2>Inventory Management</h2>
+
+    <h3>Add New Product</h3>
+    <form method="POST">
+        <label for="name">Product Name:</label>
+        <input type="text" name="name" id="name" required>
+
+        <label for="price">Price:</label>
+        <input type="number" name="price" id="price" min="0.01" step="0.01" required>
+
+        <label for="stock">Stock:</label>
+        <input type="number" name="stock" id="stock" min="0" required>
+
+        <button type="submit" class="button">Add Product</button>
+    </form>
+
+    <h3>Current Inventory</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Product ID</th>
+                <th>Product Name</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+                <tr>
+                    <td>{{ product.id }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>${{ product.price }}</td>
+                    <td>{{ product.stock }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('delete_product', product_id=product.id) }}">
+                            <button type="submit" class="button delete-button">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

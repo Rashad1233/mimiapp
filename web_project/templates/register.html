@@ -1,17 +1,25 @@
-{% extends "layout.html" %}
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
 {% block content %}
-<div class="form-container">
-    <h1>Create Your Account</h1>
+    <h2>Register as a New User</h2>
     <form method="POST">
-        <label>Username:</label>
-        <input type="text" name="username" required>
-        <label>Email:</label>
-        <input type="email" name="email" required>
-        <label>Password:</label>
-        <input type="password" name="password" required>
-        <label>Manager ID:</label>
-        <input type="text" name="manager_id" required>
-        <button type="submit">Register</button>
+        <label for="username">Username:</label>
+        <input type="text" name="username" id="username" required>
+
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" required>
+
+        <label for="password">Password:</label>
+        <input type="password" name="password" id="password" required>
+
+        <label for="role">Role:</label>
+        <select name="role" id="role" required>
+            <option value="manager">Manager</option>
+            <option value="user">User</option>
+        </select>
+
+        <button type="submit" class="button">Register</button>
     </form>
-</div>
 {% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h1>Welcome to the ERP System</h1>
+    <p>Efficiently manage your inventory, suppliers, and sales.</p>
+    {% if not 'user_id' in session %}
+        <div class="button-group">
+            <a href="{{ url_for('login', role='manager') }}" class="button">Manager Login</a>
+            <a href="{{ url_for('login', role='user') }}" class="button">User Login</a>
+            <a href="{{ url_for('register') }}" class="button">Register User</a>
+        </div>
+    {% endif %}
+{% endblock %}
