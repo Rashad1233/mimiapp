@@ -8,9 +8,15 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 import os
 
 
-# Initialize Flask
+
 app = Flask(__name__)
-app.config.from_object('config.Config')  # Load configurations from config.py
+
+# Place your config in app.py
+app.config["SECRET_KEY"] = "supersecretkey"
+app.config["DEBUG"] = False
+# etc.
+
+# The rest of your Flask app code...
 
 # Initialize Extensions
 db = SQLAlchemy(app)
