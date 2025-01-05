@@ -1,3 +1,4 @@
+<!-- templates/register.html -->
 {% extends "base.html" %}
 
 {% block title %}Register{% endblock %}
@@ -5,26 +6,41 @@
 {% block content %}
 <h2>Register</h2>
 
-<!-- Форма регистрации -->
 <form method="POST" action="{{ url_for('register') }}">
-    <label for="username">Username:</label>
-    <input type="text" name="username" id="username" required>
+    {{ form.hidden_tag() }}
 
-    <label for="email">Email:</label>
-    <input type="email" name="email" id="email" required>
+    <div>
+        {{ form.username.label }}
+        {{ form.username(size=32) }}
+        {% for error in form.username.errors %}
+            <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
 
-    <label for="password">Password:</label>
-    <input type="password" name="password" id="password" required>
+    <div>
+        {{ form.email.label }}
+        {{ form.email(size=32) }}
+        {% for error in form.email.errors %}
+            <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
 
-    <button type="submit" class="button">Register</button>
+    <div>
+        {{ form.password.label }}
+        {{ form.password(size=32) }}
+        {% for error in form.password.errors %}
+            <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <div>
+        {{ form.confirm_password.label }}
+        {{ form.confirm_password(size=32) }}
+        {% for error in form.confirm_password.errors %}
+            <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="button">{{ form.submit.label }}</button>
 </form>
-
-<!-- Уведомление -->
-{% if error %}
-<p class="error">{{ error }}</p>
-{% endif %}
-
-<p>
-    Already have an account? <a href="{{ url_for('login', role='user') }}">Log in</a>
-</p>
 {% endblock %}

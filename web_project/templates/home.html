@@ -1,23 +1,13 @@
-{% extends "layout.html" %}
+<!-- templates/home.html -->
+{% extends "base.html" %}
 
 {% block title %}Home{% endblock %}
 
 {% block content %}
 <h1>Welcome to the ERP System</h1>
-<p>Our system helps you manage inventory, orders, suppliers, and analytics in one place.</p>
-
-<div class="features">
-    <div class="feature-card">
-        <h3>Efficient Management</h3>
-        <p>Streamline your operations and manage everything with ease.</p>
-    </div>
-    <div class="feature-card">
-        <h3>Detailed Analytics</h3>
-        <p>Track sales, monitor inventory, and make data-driven decisions.</p>
-    </div>
-    <div class="feature-card">
-        <h3>Supplier Integration</h3>
-        <p>Seamlessly manage suppliers and automate orders for low-stock products.</p>
-    </div>
-</div>
+{% if not logged_in %}
+    <p>Please <a href="{{ url_for('login', role='user') }}">login</a> or <a href="{{ url_for('register') }}">register</a>.</p>
+{% else %}
+    <p>You are logged in as {{ current_user.username }}.</p>
+{% endif %}
 {% endblock %}

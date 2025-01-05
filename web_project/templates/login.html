@@ -1,27 +1,30 @@
+<!-- templates/login.html -->
 {% extends "base.html" %}
 
 {% block title %}Login{% endblock %}
 
 {% block content %}
-<h2>Login</h2>
+<h2>Login as {{ role.capitalize() }}</h2>
 
-<!-- Форма входа -->
 <form method="POST" action="{{ url_for('login', role=role) }}">
-    <label for="email">Email:</label>
-    <input type="email" name="email" id="email" required>
+    {{ form.hidden_tag() }}
 
-    <label for="password">Password:</label>
-    <input type="password" name="password" id="password" required>
+    <div>
+        {{ form.email.label }}
+        {{ form.email(size=32) }}
+        {% for error in form.email.errors %}
+            <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
 
-    <button type="submit" class="button">Login</button>
+    <div>
+        {{ form.password.label }}
+        {{ form.password(size=32) }}
+        {% for error in form.password.errors %}
+            <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="button">{{ form.submit.label }}</button>
 </form>
-
-<!-- Уведомление об ошибке -->
-{% if error %}
-<p class="error">{{ error }}</p>
-{% endif %}
-
-<p>
-    Don't have an account? <a href="{{ url_for('register') }}">Register</a>
-</p>
 {% endblock %}

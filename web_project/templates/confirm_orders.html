@@ -1,3 +1,4 @@
+<!-- templates/confirm_orders.html -->
 {% extends "base.html" %}
 
 {% block title %}Confirm Orders{% endblock %}
@@ -5,42 +6,36 @@
 {% block content %}
 <h2>Confirm Orders</h2>
 
-<!-- Таблица для подтверждения заказов -->
 <table>
     <thead>
         <tr>
             <th>Order ID</th>
-            <th>Product</th>
-            <th>Quantity</th>
             <th>User</th>
-            <th>Total Price</th>
+            <th>Product</th>
             <th>Supplier</th>
+            <th>Quantity</th>
+            <th>Status</th>
             <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-        {% for order in pending_orders %}
+        {% for order in orders %}
         <tr>
             <td>{{ order.id }}</td>
-            <td>{{ order.product.name }}</td>
-            <td>{{ order.quantity }}</td>
-            <td>{{ order.user.username }}</td>
-            <td>${{ order.quantity * order.product.price }}</td>
+            <td>{{ order.customer.username }}</td>
+            <td>{{ order.product_ordered.name }}</td>
             <td>{{ order.supplier.name }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>{{ order.status }}</td>
             <td>
                 <form method="POST" action="{{ url_for('confirm_orders') }}">
                     <input type="hidden" name="order_id" value="{{ order.id }}">
-                    <button type="submit" name="action" value="approve" class="button">Approve</button>
-                    <button type="submit" name="action" value="reject" class="button delete-button">Reject</button>
+                    <button type="submit" name="action" value="approve">Approve</button>
+                    <button type="submit" name="action" value="reject">Reject</button>
                 </form>
             </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
-
-<!-- Уведомление, если заказов нет -->
-{% if pending_orders|length == 0 %}
-<p>No pending orders at the moment.</p>
-{% endif %}
 {% endblock %}

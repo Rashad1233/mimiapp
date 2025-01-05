@@ -1,25 +1,42 @@
+# app.py
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from forms import RegistrationForm, LoginForm, AddProductForm, AddSupplierForm, FilterSalesForm
+from flask_migrate import Migrate
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+import os
 
-# Инициализация Flask
+# Initialize Flask
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
+app.config.from_object('config.Config')  # Load configurations from config.py
 
-# Конфигурация базы данных
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Initialize Extensions
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'  # Redirects to login page if not authenticated
 
-# ---------- Модели базы данных ----------
+
+# ---------- Models ----------
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(10), nullable=False)  # 'manager' или 'user'
+    role = db.Column(db.String(10), nullable=False)  # 'manager' or 'user'
     is_active = db.Column(db.Boolean, default=False)
+
+    # Relationships
+    products = db.relationship('Product', backref='owner', lazy=True)
+    sales = db.relationship('Sale', backref='buyer', lazy=True)
+    orders = db.relationship('Order', backref='customer', lazy=True)
+
+    def get_id(self):
+        return str(self.id)
+
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -27,6 +44,12 @@ class Product(db.Model):
     price = db.Column(db.Float, nullable=False)
     stock = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    # Relationships
+    suppliers = db.relationship('Supplier', backref='product', lazy=True)
+    sales = db.relationship('Sale', backref='product', lazy=True)
+    orders = db.relationship('Order', backref='product_ordered', lazy=True)
+
 
 class Supplier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -36,14 +59,17 @@ class Supplier(db.Model):
     price = db.Column(db.Float, nullable=False)
     delivery_time = db.Column(db.Integer, nullable=False)
 
+    # Relationships
+    orders = db.relationship('Order', backref='supplier', lazy=True)
+
+
 class Sale(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)  # Убедитесь, что 'product.id' существует
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
-    sale_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)  # Дата продажи
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Ссылка на 'user.id'
-
+    sale_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
 class Order(db.Model):
@@ -54,95 +80,146 @@ class Order(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     status = db.Column(db.String(20), nullable=False)  # 'pending', 'approved', 'rejected'
 
-# ---------- Главная страница ----------
+
+# ---------- User Loader for Flask-Login ----------
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+# ---------- Routes ----------
+
+# Home Route
 @app.route('/')
 def home():
-    logged_in = 'user_id' in session
-    role = session.get('role') if logged_in else None
+    logged_in = current_user.is_authenticated
+    role = current_user.role if logged_in else None
     return render_template('home.html', logged_in=logged_in, role=role)
 
-# ---------- Регистрация ----------
+
+# Registration Route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
-        role = 'user'
+    if current_user.is_authenticated:
+        flash("Вы уже вошли в систему.", 'info')
+        return redirect(url_for('home'))
+
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        email = form.email.data
+        password = generate_password_hash(form.password.data, method='pbkdf2:sha256')
+        role = 'user'  # Default role
 
         if User.query.filter_by(email=email).first():
-            flash("Email уже зарегистрирован.")
-            return render_template('register.html')
+            flash("Email уже зарегистрирован.", 'danger')
+            return render_template('register.html', form=form)
 
         new_user = User(username=username, email=email, password=password, role=role, is_active=False)
         db.session.add(new_user)
         db.session.commit()
-        flash("Регистрация прошла успешно! Ожидайте подтверждения менеджера.")
+        flash("Регистрация прошла успешно! Ожидайте подтверждения менеджера.", 'success')
         return redirect(url_for('login', role=role))
 
-    return render_template('register.html')
+    return render_template('register.html', form=form)
 
-# ---------- Вход ----------
+
+# Login Route
 @app.route('/login/<role>', methods=['GET', 'POST'])
 def login(role):
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+    if current_user.is_authenticated:
+        flash("Вы уже вошли в систему.", 'info')
+        return redirect(url_for('home'))
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = form.email.data
+        password = form.password.data
         user = User.query.filter_by(email=email, role=role).first()
 
         if user and check_password_hash(user.password, password):
-            session['user_id'] = user.id
-            session['role'] = user.role
+            if not user.is_active and role == 'user':
+                flash("Ваш аккаунт еще не активирован менеджером.", 'warning')
+                return render_template('login.html', form=form, role=role)
+            login_user(user)
+            flash("Вы успешно вошли в систему.", 'success')
             if role == 'manager':
                 return redirect(url_for('manager_dashboard'))
             elif role == 'user':
                 return redirect(url_for('user_dashboard'))
-        flash("Неверные учетные данные.")
-    return render_template('login.html', role=role)
+        else:
+            flash("Неверные учетные данные.", 'danger')
 
-# ---------- Выход ----------
+    return render_template('login.html', form=form, role=role)
+
+
+# Logout Route
 @app.route('/logout')
+@login_required
 def logout():
-    session.clear()
-    flash("Вы вышли из системы.")
+    logout_user()
+    flash("Вы вышли из системы.", 'info')
     return redirect(url_for('home'))
 
-# ---------- Панель менеджера ----------
+
+# Manager Dashboard
 @app.route('/manager_dashboard')
+@login_required
 def manager_dashboard():
-    if 'user_id' not in session or session['role'] != 'manager':
-        return redirect(url_for('login', role='manager'))
+    if current_user.role != 'manager':
+        flash("Доступ запрещен.", 'danger')
+        return redirect(url_for('home'))
 
     users = User.query.filter_by(role='user').all()
-    sales = Sale.query.all()
-    for sale in sales:
-        print(sale.sale_date)
+    sales = Sale.query.order_by(Sale.sale_date.desc()).all()
     inventory = Product.query.all()
     return render_template('manager_dashboard.html', users=users, sales=sales, inventory=inventory)
 
-# ---------- Панель пользователя ----------
-@app.route('/user_dashboard')
-def user_dashboard():
-    if 'user_id' not in session or session['role'] != 'user':
-        return redirect(url_for('login', role='user'))
 
-    user = User.query.get(session['user_id'])
-    sales = Sale.query.filter_by(user_id=user.id).all()
-    products = Product.query.filter_by(user_id=user.id).all()
+# User Dashboard
+@app.route('/user_dashboard')
+@login_required
+def user_dashboard():
+    if current_user.role != 'user':
+        flash("Доступ запрещен.", 'danger')
+        return redirect(url_for('home'))
+
+    sales = Sale.query.filter_by(user_id=current_user.id).order_by(Sale.sale_date.desc()).all()
+    products = Product.query.filter_by(user_id=current_user.id).all()
     return render_template('user_dashboard.html', sales=sales, products=products)
 
-# ---------- Добавление продаж ----------
-@app.route('/add_sale', methods=['POST'])
-def add_sale():
-    if 'user_id' not in session or session['role'] != 'user':
-        return redirect(url_for('login', role='user'))
 
-    product_id = request.form['product_id']
-    quantity = int(request.form['quantity'])
+# Add Sale
+@app.route('/add_sale', methods=['POST'])
+@login_required
+def add_sale():
+    if current_user.role != 'user':
+        flash("Доступ запрещен.", 'danger')
+        return redirect(url_for('home'))
+
+    product_id = request.form.get('product_id')
+    quantity = request.form.get('quantity')
+
+    # Input Validation
+    if not product_id or not quantity:
+        flash("Все поля обязательны для заполнения.", 'danger')
+        return redirect(url_for('user_dashboard'))
+
+    try:
+        quantity = int(quantity)
+        if quantity < 1:
+            raise ValueError
+    except ValueError:
+        flash("Количество должно быть положительным целым числом.", 'danger')
+        return redirect(url_for('user_dashboard'))
 
     product = Product.query.get(product_id)
-    if not product or product.stock < quantity:
-        flash("Недостаточно товара на складе.")
+    if not product:
+        flash("Продукт не найден.", 'danger')
+        return redirect(url_for('user_dashboard'))
+
+    if product.stock < quantity:
+        flash("Недостаточно товара на складе.", 'warning')
         return redirect(url_for('user_dashboard'))
 
     total_price = product.price * quantity
@@ -152,73 +229,98 @@ def add_sale():
         product_id=product_id,
         quantity=quantity,
         total_price=total_price,
-        user_id=session['user_id']
+        user_id=current_user.id
     )
     db.session.add(new_sale)
     db.session.commit()
-    flash("Продажа успешно добавлена.")
+    flash("Продажа успешно добавлена.", 'success')
     return redirect(url_for('user_dashboard'))
 
-# ---------- Управление пользователями ----------
-@app.route('/manage_users', methods=['GET', 'POST'])
-def manage_users():
-    if 'user_id' not in session or session['role'] != 'manager':
-        return redirect(url_for('login', role='manager'))
 
-    inactive_users = User.query.filter_by(is_active=False).all()
-    active_users = User.query.filter_by(is_active=True).all()
+# Manage Users (Manager Only)
+@app.route('/manage_users', methods=['GET', 'POST'])
+@login_required
+def manage_users():
+    if current_user.role != 'manager':
+        flash("Доступ запрещен.", 'danger')
+        return redirect(url_for('home'))
+
+    inactive_users = User.query.filter_by(role='user', is_active=False).all()
+    active_users = User.query.filter_by(role='user', is_active=True).all()
 
     if request.method == 'POST':
         user_id = request.form.get('user_id')
         action = request.form.get('action')
+
         user = User.query.get(user_id)
+        if not user or user.role != 'user':
+            flash("Пользователь не найден.", 'danger')
+            return redirect(url_for('manage_users'))
 
         if action == 'approve':
             user.is_active = True
+            flash(f"Пользователь {user.username} одобрен.", 'success')
         elif action == 'delete':
             db.session.delete(user)
+            flash(f"Пользователь {user.username} удален.", 'info')
+        else:
+            flash("Неверное действие.", 'warning')
+            return redirect(url_for('manage_users'))
 
         db.session.commit()
         return redirect(url_for('manage_users'))
 
     return render_template('manage_users.html', inactive_users=inactive_users, active_users=active_users)
 
-# ---------- Управление инвентарем ----------
-@app.route('/inventory', methods=['GET', 'POST'])
-def inventory():
-    if 'user_id' not in session:
-        return redirect(url_for('login', role='manager'))
 
-    if request.method == 'POST':
-        name = request.form['name']
-        price = float(request.form['price'])
-        stock = int(request.form['stock'])
-        user_id = session['user_id']
+# Inventory Management
+@app.route('/inventory', methods=['GET', 'POST'])
+@login_required
+def inventory():
+    if current_user.role not in ['manager', 'user']:
+        flash("Доступ запрещен.", 'danger')
+        return redirect(url_for('home'))
+
+    form = AddProductForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        price = form.price.data
+        stock = form.stock.data
+        user_id = current_user.id if current_user.role == 'user' else None  # Assign ownership if user
 
         new_product = Product(name=name, price=price, stock=stock, user_id=user_id)
         db.session.add(new_product)
         db.session.commit()
-        flash("Продукт успешно добавлен в инвентарь.")
+        flash("Продукт успешно добавлен в инвентарь.", 'success')
         return redirect(url_for('inventory'))
 
-    products = Product.query.filter_by(user_id=session['user_id']).all()
-    return render_template('inventory.html', products=products)
+    if current_user.role == 'user':
+        products = Product.query.filter_by(user_id=current_user.id).all()
+    else:
+        products = Product.query.all()
 
-# ---------- Управление поставщиками ----------
+    return render_template('inventory.html', products=products, form=form)
+
+
+# Suppliers Management
 @app.route('/suppliers', methods=['GET', 'POST'])
+@login_required
 def suppliers():
-    if 'user_id' not in session or session['role'] != 'manager':
-        return redirect(url_for('login', role='manager'))
+    if current_user.role != 'manager':
+        flash("Доступ запрещен.", 'danger')
+        return redirect(url_for('home'))
 
-    products = Product.query.all()
+    form = AddSupplierForm()
+    form.product_id.choices = [(product.id, product.name) for product in Product.query.all()]
+
     suppliers = Supplier.query.all()
 
-    if request.method == 'POST':
-        product_id = request.form['product_id']
-        name = request.form['name']
-        quantity = int(request.form['quantity'])
-        price = float(request.form['price'])
-        delivery_time = int(request.form['delivery_time'])
+    if form.validate_on_submit():
+        product_id = form.product_id.data
+        name = form.name.data
+        quantity = form.quantity.data
+        price = form.price.data
+        delivery_time = form.delivery_time.data
 
         new_supplier = Supplier(
             product_id=product_id,
@@ -229,56 +331,111 @@ def suppliers():
         )
         db.session.add(new_supplier)
         db.session.commit()
-        flash("Поставщик успешно добавлен.")
+        flash("Поставщик успешно добавлен.", 'success')
         return redirect(url_for('suppliers'))
 
-    return render_template('suppliers.html', products=products, suppliers=suppliers)
+    return render_template('suppliers.html', suppliers=suppliers, form=form)
 
-# ---------- Подтверждение заказов ----------
+
+# Confirm Orders (Manager Only)
 @app.route('/confirm_orders', methods=['GET', 'POST'])
+@login_required
 def confirm_orders():
-    if 'user_id' not in session or session['role'] != 'manager':
-        return redirect(url_for('login', role='manager'))
+    if current_user.role != 'manager':
+        flash("Доступ запрещен.", 'danger')
+        return redirect(url_for('home'))
 
     orders = Order.query.filter_by(status='pending').all()
 
     if request.method == 'POST':
-        order_id = request.form['order_id']
-        action = request.form['action']
+        order_id = request.form.get('order_id')
+        action = request.form.get('action')
+
         order = Order.query.get(order_id)
+        if not order:
+            flash("Заказ не найден.", 'danger')
+            return redirect(url_for('confirm_orders'))
 
         if action == 'approve':
             order.status = 'approved'
+            flash("Заказ одобрен.", 'success')
         elif action == 'reject':
             order.status = 'rejected'
+            flash("Заказ отклонен.", 'info')
+        else:
+            flash("Неверное действие.", 'warning')
+            return redirect(url_for('confirm_orders'))
 
         db.session.commit()
         return redirect(url_for('confirm_orders'))
 
     return render_template('confirm_orders.html', orders=orders)
 
-# ---------- Аналитика ----------
-@app.route('/analytics', methods=['GET'])
-def analytics():
-    if 'user_id' not in session or session['role'] != 'manager':
-        return redirect(url_for('login', role='manager'))
 
-    total_sales = db.session.query(db.func.sum(Sale.total_price)).scalar() or 0
-    total_products_sold = db.session.query(db.func.sum(Sale.quantity)).scalar() or 0
+# Analytics (Manager Only)
+@app.route('/analytics', methods=['GET', 'POST'])
+@login_required
+def analytics():
+    if current_user.role != 'manager':
+        flash("Доступ запрещен.", 'danger')
+        return redirect(url_for('home'))
+
+    form = FilterSalesForm()
+    sales_history = []
+    total_sales = 0
+    total_products_sold = 0
     low_stock_products = Product.query.filter(Product.stock < 10).all()
-    sales_history = Sale.query.all()
+
+    if form.validate_on_submit():
+        start_date_str = form.start_date.data
+        end_date_str = form.end_date.data
+
+        try:
+            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+        except ValueError:
+            flash("Неверный формат даты.", 'danger')
+            return redirect(url_for('analytics'))
+
+        sales_history = Sale.query.filter(
+            Sale.sale_date >= start_date,
+            Sale.sale_date <= end_date
+        ).all()
+
+        total_sales = sum(sale.total_price for sale in sales_history)
+        total_products_sold = sum(sale.quantity for sale in sales_history)
+    else:
+        # Display all sales by default
+        sales_history = Sale.query.all()
+        total_sales = db.session.query(db.func.sum(Sale.total_price)).scalar() or 0
+        total_products_sold = db.session.query(db.func.sum(Sale.quantity)).scalar() or 0
 
     return render_template(
         'analytics.html',
+        form=form,
         total_sales=total_sales,
         total_products_sold=total_products_sold,
         low_stock_products=low_stock_products,
         sales_history=sales_history
     )
 
-# ---------- Запуск приложения ----------
+
+# ---------- Error Handlers ----------
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(403)
+def forbidden(e):
+    return render_template('403.html'), 403
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+
+# ---------- Run the Application ----------
 if __name__ == '__main__':
-    with app.app_context():
-        db.drop_all()
-        db.create_all()
     app.run(debug=True)

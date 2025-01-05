@@ -1,14 +1,49 @@
-<h3>Sales History</h3>
-<form method="GET" action="{{ url_for('analytics') }}">
-    <label for="start_date">Start Date:</label>
-    <input type="date" name="start_date" required>
+<!-- templates/analytics.html -->
+{% extends "base.html" %}
 
-    <label for="end_date">End Date:</label>
-    <input type="date" name="end_date" required>
+{% block title %}Analytics{% endblock %}
 
-    <button type="submit" class="button">Filter</button>
+{% block content %}
+<h2>Analytics</h2>
+
+<!-- Filter Sales Form -->
+<h3>Filter Sales by Date</h3>
+<form method="POST" action="{{ url_for('analytics') }}">
+    {{ form.hidden_tag() }}
+
+    <div>
+        {{ form.start_date.label }}
+        {{ form.start_date(type="date") }}
+        {% for error in form.start_date.errors %}
+            <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <div>
+        {{ form.end_date.label }}
+        {{ form.end_date(type="date") }}
+        {% for error in form.end_date.errors %}
+            <span class="error">{{ error }}</span>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="button">{{ form.submit.label }}</button>
 </form>
 
+<!-- Display Analytics Data -->
+<h3>Total Sales: ${{ "%.2f"|format(total_sales) }}</h3>
+<h3>Total Products Sold: {{ total_products_sold }}</h3>
+
+<!-- Low Stock Products -->
+<h3>Low Stock Products</h3>
+<ul>
+    {% for product in low_stock_products %}
+        <li>{{ product.name }} - Stock: {{ product.stock }}</li>
+    {% endfor %}
+</ul>
+
+<!-- Sales History Table -->
+<h3>Sales History</h3>
 <table>
     <thead>
         <tr>
@@ -19,13 +54,14 @@
         </tr>
     </thead>
     <tbody>
-        {% for sale in sales %}
+        {% for sale in sales_history %}
         <tr>
             <td>{{ sale.sale_date.strftime('%Y-%m-%d') }}</td>
             <td>{{ sale.product.name }}</td>
             <td>{{ sale.quantity }}</td>
-            <td>${{ sale.total_price }}</td>
+            <td>${{ "%.2f"|format(sale.total_price) }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+{% endblock %}

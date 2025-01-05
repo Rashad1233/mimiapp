@@ -1,0 +1,10 @@
+<!-- templates/500.html -->
+{% extends "base.html" %}
+
+{% block title %}Internal Server Error{% endblock %}
+
+{% block content %}
+<h2>500 - Внутренняя ошибка сервера</h2>
+<p>Произошла ошибка при обработке вашего запроса. Пожалуйста, попробуйте позже.</p>
+<a href="{{ url_for('home') }}">Вернуться на главную</a>
+{% endblock %}

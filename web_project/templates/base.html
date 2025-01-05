@@ -1,36 +1,51 @@
+<!-- templates/base.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <title>{% block title %}ERP System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <!-- Include other CSS or JS files here -->
 </head>
 <body>
-    <div class="navbar">a
-        {% if 'user_id' in session %}
-            {% if session['role'] == 'manager' %}
-                <a href="{{ url_for('manager_dashboard') }}">Manager Dashboard</a>
-                <a href="{{ url_for('inventory') }}">Inventory</a>
-                <a href="{{ url_for('confirm_users') }}" class="button">Manage Users</a>
+    <nav>
+        <a href="{{ url_for('home') }}">Home</a>
+        {% if current_user.is_authenticated %}
+            {% if current_user.role == 'manager' %}
+                <a href="{{ url_for('manager_dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('manage_users') }}">Manage Users</a>
                 <a href="{{ url_for('suppliers') }}">Suppliers</a>
-                <a href="{{ url_for('analytics') }}">Analytics</a>
                 <a href="{{ url_for('confirm_orders') }}">Confirm Orders</a>
-            {% elif session['role'] == 'user' %}
-                <a href="{{ url_for('user_dashboard') }}">User Dashboard</a>
-                <a href="{{ url_for('shopping_cart') }}">Shopping Cart</a>
+                <a href="{{ url_for('analytics') }}">Analytics</a>
+            {% elif current_user.role == 'user' %}
+                <a href="{{ url_for('user_dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('inventory') }}">Inventory</a>
             {% endif %}
             <a href="{{ url_for('logout') }}">Logout</a>
         {% else %}
-            <a href="{{ url_for('home') }}">Home</a>
+            <a href="{{ url_for('login', role='manager') }}">Login as Manager</a>
+            <a href="{{ url_for('login', role='user') }}">Login as User</a>
             <a href="{{ url_for('register') }}">Register</a>
         {% endif %}
-    </div>
+    </nav>
+
     <div class="container">
+        <!-- Display Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
     </div>
-    <footer class="footer">
-        &copy; 2025 ERP System. All rights reserved.
+
+    <footer>
+        <p>&copy; {{ current_year }} ERP System</p>
     </footer>
+
+    <!-- Include your JavaScript here -->
 </body>
 </html>
