@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
-    <link rel="stylesheet" type="text/css" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <header>
         <h1>ERP System</h1>
         <nav>
             <a href="/">Home</a>
-            {% if session.get('role') == 'admin' %}
-                <a href="/admin">Admin Dashboard</a>
-                <a href="/admin/active_users">Active Users</a>
-            {% elif session.get('role') == 'customer' %}
-                <a href="/customer">Customer Dashboard</a>
-            {% elif session.get('role') == 'supplier' %}
-                <a href="/supplier">Supplier Dashboard</a>
+            {% if session.get('role') == 'manager' %}
+                <a href="/manager">Manager Dashboard</a>
+                <a href="/manager/inventory">Manage Inventory</a>
+                <a href="/shopping_cart">Shopping Cart</a>
+            {% elif session.get('role') == 'user' %}
+                <a href="/user">User Dashboard</a>
             {% endif %}
             {% if session.get('user_id') %}
                 <a href="/logout">Logout</a>

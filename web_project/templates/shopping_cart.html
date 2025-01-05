@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Shopping Cart</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cart_item, product in cart_items %}
+        <tr>
+            <td>{{ product.product_name }}</td>
+            <td>{{ cart_item.quantity }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<form method="POST" action="/shopping_cart/checkout">
+    <button type="submit">Checkout</button>
+</form>
+{% endblock %}

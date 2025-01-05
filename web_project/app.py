@@ -1,6 +1,8 @@
-from flask import Flask, request, render_template, redirect, url_for, session
+from flask import Flask, render_template, redirect, url_for, request, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+import smtplib
+from email.mime.text import MIMEText
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -9,6 +11,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+USER_LIMIT = 10
 
 # Модели базы данных
 class User(db.Model):
@@ -16,195 +19,102 @@ class User(db.Model):
     username = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(50), nullable=False)  # admin, customer, supplier
-    is_active = db.Column(db.Boolean, default=False)  # Пользователь активен или нет
+    role = db.Column(db.String(50), nullable=False)  # manager, user
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # ID менеджера для пользователя
+    is_active = db.Column(db.Boolean, default=False)  # Активен ли пользователь
 
-
-class CustomerSupplier(db.Model):
+class Inventory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    customer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    supplier_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    product_name = db.Column(db.String(100), nullable=False)
+    quantity = db.Column(db.Integer, default=0)
+    min_stock = db.Column(db.Integer, default=5)
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    is_standard = db.Column(db.Boolean, default=False)  # Является ли продукт стандартным
 
+class ShoppingCart(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('inventory.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    manager_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# Главная страница выбора роли
-@app.route('/')
-def home():
-    return render_template('home.html')
+# Предзагрузка стандартных продуктов
+def load_standard_products():
+    standard_products = ["Coffee", "Croissant", "Juice"]
+    for product_name in standard_products:
+        existing_product = Inventory.query.filter_by(product_name=product_name, is_standard=True).first()
+        if not existing_product:
+            product = Inventory(product_name=product_name, quantity=0, min_stock=5, is_standard=True)
+            db.session.add(product)
+    db.session.commit()
 
+# Функция отправки email
+def send_email_to_supplier(subject, body, recipient):
+    sender_email = "your_email@example.com"
+    sender_password = "your_password"
 
-@app.route('/select_role', methods=['POST'])
-def select_role():
-    role = request.form['role']
-    if role == 'admin':
-        return redirect(url_for('login', role='admin'))
-    elif role == 'customer':
-        return redirect(url_for('login', role='customer'))
-    elif role == 'supplier':
-        return redirect(url_for('login', role='supplier'))
-    return "Invalid role selected.", 400
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = sender_email
+    msg['To'] = recipient
 
+    with smtplib.SMTP('smtp.gmail.com', 587) as server:
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
 
-# Вход
-@app.route('/login/<role>', methods=['GET', 'POST'])
-def login(role):
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        user = User.query.filter_by(email=email, role=role).first()
-
-        if user and check_password_hash(user.password, password):
-            if not user.is_active:
-                return "Your account is not yet approved by the admin."
-            session['user_id'] = user.id
-            session['role'] = user.role
-            if user.role == 'admin':
-                return redirect(url_for('admin_dashboard'))
-            elif user.role == 'customer':
-                return redirect(url_for('customer_dashboard'))
-            elif user.role == 'supplier':
-                return redirect(url_for('supplier_dashboard'))
-
-        return "Invalid credentials or role."
-
-    return render_template('login.html', role=role)
-
-
-# Регистрация
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = generate_password_hash(request.form['password'], method="pbkdf2:sha256")
-        role = request.form['role']
-
-        # Проверка уникальности
-        if User.query.filter_by(email=email).first():
-            return "Email already registered."
-
-        new_user = User(username=username, email=email, password=password, role=role, is_active=False)
-        db.session.add(new_user)
-        db.session.commit()
-        return redirect(url_for('login', role=role))
-
-    return render_template('register.html')
-
-
-# Администратор: просмотр и активация пользователей
-@app.route('/admin')
-def admin_dashboard():
-    if 'role' not in session or session['role'] != 'admin':
+# Корзина: добавление товара
+@app.route('/shopping_cart/add/<int:product_id>', methods=['POST'])
+def add_to_cart(product_id):
+    if 'role' not in session or session['role'] != 'manager':
         return "Access denied."
 
-    inactive_users = User.query.filter_by(is_active=False).all()
-    return render_template('admin_dashboard.html', inactive_users=inactive_users)
+    quantity = int(request.form['quantity'])
+    manager_id = session['user_id']
 
+    new_item = ShoppingCart(product_id=product_id, quantity=quantity, manager_id=manager_id)
+    db.session.add(new_item)
+    db.session.commit()
+    return redirect(url_for('view_cart'))
 
-@app.route('/admin/approve/<int:user_id>', methods=['POST'])
-def approve_user(user_id):
-    if 'role' not in session or session['role'] != 'admin':
+# Корзина: просмотр
+@app.route('/shopping_cart')
+def view_cart():
+    if 'role' not in session or session['role'] != 'manager':
         return "Access denied."
 
-    user = User.query.get(user_id)
-    if user:
-        user.is_active = True
-        db.session.commit()
-        return redirect(url_for('admin_dashboard'))
-    return "User not found."
+    manager_id = session['user_id']
+    cart_items = db.session.query(ShoppingCart, Inventory).join(Inventory).filter(ShoppingCart.manager_id == manager_id).all()
+    return render_template('shopping_cart.html', cart_items=cart_items)
 
-
-@app.route('/admin/reject/<int:user_id>', methods=['POST'])
-def reject_user(user_id):
-    if 'role' not in session or session['role'] != 'admin':
+# Корзина: оформление заказа
+@app.route('/shopping_cart/checkout', methods=['POST'])
+def checkout():
+    if 'role' not in session or session['role'] != 'manager':
         return "Access denied."
 
-    user = User.query.get(user_id)
-    if user:
-        db.session.delete(user)
-        db.session.commit()
-        return redirect(url_for('admin_dashboard'))
-    return "User not found."
+    manager_id = session['user_id']
+    cart_items = db.session.query(ShoppingCart, Inventory).join(Inventory).filter(ShoppingCart.manager_id == manager_id).all()
 
+    order_details = []
+    for cart_item, product in cart_items:
+        order_details.append(f"{product.product_name}: {cart_item.quantity}")
+        product.quantity += cart_item.quantity
+        db.session.delete(cart_item)
 
-# Администратор: просмотр активных пользователей
-@app.route('/admin/active_users', methods=['GET', 'POST'])
-def active_users():
-    if 'role' not in session or session['role'] != 'admin':
-        return "Access denied."
+    db.session.commit()
 
-    if request.method == 'POST':
-        security_key = request.form.get('security_key')
-        user_id = request.form.get('user_id')
-
-        # Проверяем ключ безопасности
-        if security_key != "UHm8g167":
-            return "Invalid security key."
-
-        # Удаляем пользователя
-        user = User.query.get(user_id)
-        if user and user.is_active:
-            db.session.delete(user)
-            db.session.commit()
-            return redirect(url_for('active_users'))
-
-        return "User not found or not active."
-
-    # Отображаем всех активных пользователей
-    active_users = User.query.filter_by(is_active=True).all()
-    return render_template('admin_active_users.html', active_users=active_users)
-
-
-# Клиенты
-@app.route('/customer')
-def customer_dashboard():
-    if 'role' not in session or session['role'] != 'customer':
-        return "Access denied."
-
-    suppliers = CustomerSupplier.query.filter_by(customer_id=session['user_id']).all()
-    return render_template('customer_dashboard.html', suppliers=suppliers)
-
-
-# Поставщики
-@app.route('/supplier')
-def supplier_dashboard():
-    if 'role' not in session or session['role'] != 'supplier':
-        return "Access denied."
-
-    return render_template('supplier_dashboard.html')
-
-
-# Выход из системы
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('home'))
-
-
-# Функция для создания администратора
-def create_admin():
-    admin_email = "admin@example.com"
-    admin_password = "password123"
-
-    # Проверяем, существует ли уже администратор
-    existing_admin = User.query.filter_by(email=admin_email, role="admin").first()
-    if not existing_admin:
-        admin = User(
-            username="admin",
-            email=admin_email,
-            password=generate_password_hash(admin_password, method="pbkdf2:sha256"),
-            role="admin",
-            is_active=True  # Администратор активен по умолчанию
-        )
-        db.session.add(admin)
-        db.session.commit()
-        print(f"Администратор создан! Email: {admin_email}, Пароль: {admin_password}")
-    else:
-        print("Администратор уже существует.")
-
+    # Отправляем email поставщику
+    order_text = "\n".join(order_details)
+    send_email_to_supplier(
+        subject="New Order from ERP System",
+        body=f"Order Details:\n{order_text}",
+        recipient="supplier@example.com"
+    )
+    return redirect(url_for('view_cart'))
 
 # Создание базы данных
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Создание всех таблиц в базе данных
-        create_admin()  # Создаём администратора
+        db.create_all()
+        load_standard_products()
     app.run(debug=True)

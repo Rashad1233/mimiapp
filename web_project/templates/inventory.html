@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Inventory Management</h1>
+<table>
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Minimum Stock</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in inventory_items %}
+        <tr>
+            <td>{{ item.product_name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.min_stock }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<h2>Add New Product</h2>
+<form method="POST">
+    <label>Product Name:</label>
+    <input type="text" name="product_name" required>
+    <label>Quantity:</label>
+    <input type="number" name="quantity" required>
+    <label>Minimum Stock:</label>
+    <input type="number" name="min_stock" required>
+    <button type="submit">Add Product</button>
+</form>
+{% endblock %}
