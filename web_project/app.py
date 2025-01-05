@@ -6,6 +6,8 @@ from web_project.forms import RegistrationForm, LoginForm, AddProductForm, AddSu
 from flask_migrate import Migrate
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 import os
+from your_database_module import db, User  # Adjust your import paths
+
 
 
 
@@ -138,7 +140,21 @@ def register():
 
     return render_template('register.html', form=form)
 
-
+@app.before_first_request
+def create_manager_if_needed():
+    manager = User.query.filter_by(email='manager@example.com').first()
+    if not manager:
+        hashed_pw = generate_password_hash('SecretManagerPass123', method='pbkdf2:sha256')
+        manager_user = User(
+            username='TheManager',
+            email='manager@example.com',
+            password=hashed_pw,
+            role='manager',
+            is_active=True
+        )
+        db.session.add(manager_user)
+        db.session.commit()
+        print("Created default manager with password: SecretManagerPass123")
 # Login Route
 @app.route('/login/<role>', methods=['GET', 'POST'])
 def login(role):
